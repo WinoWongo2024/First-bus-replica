@@ -230,7 +230,7 @@
 </div>
 
 <script>
-    // 1. Your Credentials
+    // 1. Credentials
     const APP_ID = '9a81bccc';
     const APP_KEY = 'caed75b9c5a81252f12a3aec68159d90';
     const ATCO_CODE = '0100BPA10002'; // Bath Bus Station
@@ -238,41 +238,51 @@
     async function fetchLiveDepartures() {
         const listContainer = document.getElementById('departure-list');
         
-        // The real API URL
+        // TransportAPI URL
         const targetUrl = `https://transportapi.com/v3/uk/bus/stop/${ATCO_CODE}/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&group=no&nextbuses=yes`;
         
-        // The simplest Free Proxy (AllOrigins) to bypass EdgeOne/CORS blocks
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+        // Using the 'raw' version of the proxy is simpler for our code to read
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
         try {
             const response = await fetch(proxyUrl);
-            const wrapper = await response.json();
-            // AllOrigins wraps the data in a "contents" string, so we parse it:
-            const data = JSON.parse(wrapper.contents);
             
-            listContainer.innerHTML = ''; 
-            const buses = data.departures.all;
+            if (!response.ok) {
+                throw new Error('Proxy or API error');
+            }
 
-            if (buses && buses.length > 0) {
-                buses.slice(0, 5).forEach(bus => {
+            const data = await response.json();
+            
+            // Log to console so we can see the "guts" of the data if it fails
+            console.log("Bus Data Received:", data);
+
+            listContainer.innerHTML = ''; 
+
+            // Check if departures exist in the response
+            if (data.departures && data.departures.all && data.departures.all.length > 0) {
+                data.departures.all.slice(0, 5).forEach(bus => {
                     const item = document.createElement('div');
                     item.className = 'departure-item';
+                    
+                    // Logic for real-time vs scheduled
+                    let timeDisplay = bus.best_departure_estimate;
+                    
                     item.innerHTML = `
                         <span><span class="route-number">${bus.line}</span> to ${bus.direction}</span>
-                        <span style="font-weight: bold; color: var(--primary-magenta);">${bus.best_departure_estimate}</span>
+                        <span style="font-weight: bold; color: var(--primary-magenta);">${timeDisplay}</span>
                     `;
                     listContainer.appendChild(item);
                 });
             } else {
-                listContainer.innerHTML = 'No buses found. Is it late in Bath?';
+                listContainer.innerHTML = '<div style="padding:10px;">No live buses found. It might be outside of operating hours.</div>';
             }
         } catch (error) {
-            console.error("Fetch error:", error);
-            listContainer.innerHTML = '<div style="color:red">Unable to load live times.</div>';
+            console.error("Full Error Info:", error);
+            listContainer.innerHTML = `<div style="color:red; padding:10px;">Connection Error.<br><small>Check if your API keys are correct.</small></div>`;
         }
     }
 
-    // --- Simple Navigation ---
+    // --- Standard App Logic ---
     function switchTab(tab) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
@@ -280,19 +290,19 @@
         document.getElementById('nav-' + tab).classList.add('active-nav');
     }
 
-    // --- Simple Animation ---
     let pos = -60;
     function moveBus() {
-        pos += 1;
+        pos += 1.2;
         if (pos > 375) pos = -60;
-        document.getElementById('sim-bus').style.left = pos + 'px';
+        const b = document.getElementById('sim-bus');
+        if(b) b.style.left = pos + 'px';
         requestAnimationFrame(moveBus);
     }
 
-    // Start everything
     moveBus();
     fetchLiveDepartures();
 </script>
+
 
 </body>
 </html>
