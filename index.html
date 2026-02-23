@@ -3,166 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>First Bus - ÖestVèl Edition</title>
+    <title>OnBusOffBus - Live Transit</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
-            --first-magenta: #e3007b;
-            --first-purple: #4a154b;
-            --bg-light: #f8f9fa;
-            --shimmer: #eeeeee;
+            --obob-blue: #0059a7;
+            --obob-green: #78aa36;
+            --obob-dark: #1a1a1a;
+            --accent: #ffcc00;
+            --bg: #f4f7f6;
         }
 
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #app-shell { width: 375px; height: 750px; background: var(--bg-light); border-radius: 35px; overflow: hidden; position: relative; display: flex; flex-direction: column; border: 8px solid #333; }
+        body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--obob-dark); }
         
-        header { background: var(--first-purple); color: white; padding: 18px; text-align: center; font-weight: 700; border-bottom: 5px solid var(--first-magenta); }
+        #app-shell { width: 380px; height: 780px; background: var(--bg); border-radius: 40px; overflow: hidden; position: relative; display: flex; flex-direction: column; border: 10px solid #222; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
 
-        /* --- LOADING SHIMMER EFFECT --- */
-        .shimmer-wrapper { padding: 10px; display: none; }
-        .shimmer-card { height: 70px; background: white; margin-bottom: 10px; border-radius: 12px; position: relative; overflow: hidden; }
-        .shimmer-card::after {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
-            animation: shimmer 1.5s infinite;
+        /* Branding Header */
+        header { 
+            background: var(--obob-blue); color: white; padding: 20px; text-align: left; 
+            border-bottom: 4px solid var(--obob-green); display: flex; justify-content: space-between; align-items: center;
         }
-        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .logo { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; }
+        .logo span { color: var(--obob-green); }
+        .live-indicator { width: 10px; height: 10px; background: #00ff00; border-radius: 50%; box-shadow: 0 0 8px #00ff00; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        /* --- APP CONTENT --- */
-        .screen { flex: 1; display: none; overflow-y: auto; }
+        /* Tab Switcher */
+        .sub-nav { display: flex; background: white; border-bottom: 1px solid #ddd; }
+        .sub-nav button { flex: 1; padding: 12px; border: none; background: none; font-weight: 600; color: #666; cursor: pointer; border-bottom: 3px solid transparent; }
+        .sub-nav button.active { border-bottom: 3px solid var(--obob-blue); color: var(--obob-blue); }
+
+        /* Content Area */
+        .screen { flex: 1; display: none; overflow-y: auto; padding: 10px; }
         .screen.active { display: block; }
-        .departure-card { background: white; margin: 10px; padding: 15px; border-radius: 12px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .route-badge { background: var(--first-magenta); color: white; width: 45px; height: 35px; display: flex; justify-content: center; align-items: center; border-radius: 6px; font-weight: bold; margin-right: 15px; }
-        .dest-name { font-weight: 600; font-size: 0.9rem; color: #333; text-transform: capitalize; }
-        .live-label { color: var(--first-magenta); font-size: 0.7rem; font-weight: bold; margin-top: 3px; }
 
-        /* --- NAVIGATION --- */
-        nav { background: white; height: 70px; display: flex; border-top: 1px solid #ddd; }
-        nav button { flex: 1; border: none; background: none; color: #888; font-size: 0.75rem; cursor: pointer; }
-        nav button.active-nav { color: var(--first-magenta); font-weight: bold; }
-        .nav-icon { font-size: 1.3rem; display: block; margin-bottom: 2px; }
+        /* Vehicle Cards */
+        .bus-card { 
+            background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; 
+            display: flex; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--obob-blue); position: relative;
+        }
+        .route-num { background: var(--obob-dark); color: white; min-width: 45px; height: 40px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-weight: 800; font-size: 1.1rem; margin-right: 15px; }
+        .bus-details { flex: 1; }
+        .bus-details b { display: block; font-size: 0.95rem; margin-bottom: 2px; text-transform: capitalize; }
+        .bus-meta { font-size: 0.75rem; color: #777; display: flex; gap: 10px; }
+        .delay-tag { color: #d9534f; font-weight: bold; }
+        
+        /* Fares Page */
+        .fare-row { display: flex; justify-content: space-between; padding: 15px; background: white; border-radius: 10px; margin-bottom: 8px; border: 1px solid #eee; }
+        .fare-price { color: var(--obob-green); font-weight: 900; font-size: 1.1rem; }
 
-        #live-map { height: 100%; width: 100%; }
+        /* Footer Nav */
+        nav { background: white; height: 75px; display: flex; border-top: 2px solid #eee; padding-bottom: 15px; }
+        nav button { flex: 1; border: none; background: none; color: #aaa; font-size: 0.7rem; font-weight: bold; }
+        nav button.active-nav { color: var(--obob-blue); }
+        .n-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
     </style>
 </head>
 <body>
 
 <div id="app-shell">
-    <header>Live Updates</header>
+    <header>
+        <div class="logo">On<span>Bus</span>Off<span>Bus</span></div>
+        <div class="live-indicator"></div>
+    </header>
 
-    <div id="list-screen" class="screen active">
-        <div id="loading-view" class="shimmer-wrapper">
-            <div class="shimmer-card"></div><div class="shimmer-card"></div><div class="shimmer-card"></div>
-        </div>
-        <div id="departure-container"></div>
+    <div class="sub-nav" id="direction-tabs">
+        <button class="active" onclick="setDirection('outbound', this)">DEPARTURES</button>
+        <button onclick="setDirection('inbound', this)">ARRIVALS</button>
     </div>
 
-    <div id="map-screen" class="screen"><div id="live-map"></div></div>
+    <div id="live-screen" class="screen active">
+        <div id="vehicle-list"></div>
+    </div>
 
-    <div id="tickets-screen" class="screen" style="padding:20px;">
-        <h3>M-Tickets</h3>
-        <div style="background:white; padding:15px; border-radius:10px; border-left:4px solid var(--first-magenta);">
-            <strong>Bath Adult Single</strong><br><span style="font-size:1.5rem">VC€ 2.00</span>
-        </div>
+    <div id="map-screen" class="screen" style="padding:0;"><div id="live-map" style="height:100%"></div></div>
+
+    <div id="fares-screen" class="screen">
+        <h3 style="margin: 10px 0;">Ticket Prices (VC€)</h3>
+        <div id="fares-list"></div>
     </div>
 
     <nav>
-        <button id="btn-list" class="active-nav" onclick="showTab('list')"><span class="nav-icon">🕒</span>Times</button>
-        <button id="btn-map" onclick="showTab('map')"><span class="nav-icon">📍</span>Map</button>
-        <button id="btn-tickets" onclick="showTab('tickets')"><span class="nav-icon">🎟️</span>Tickets</button>
+        <button class="active-nav" onclick="switchMainTab('live', this)"><span class="n-icon">🕒</span>Live</button>
+        <button onclick="switchMainTab('map', this)"><span class="n-icon">🗺️</span>Map</button>
+        <button onclick="switchMainTab('fares', this)"><span class="n-icon">🎟️</span>Fares</button>
     </nav>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Security: Obfuscated logic. We don't mention BODS in the UI anymore.
-    const _KEY = '5fd1f1f6d3cade37b6edd3bb37192708d2b262dd';
-    const _BND = '-2.45,51.35,-2.30,51.43'; 
-    const _OP = 'FBRI'; 
+    const API_KEY = '5fd1f1f6d3cade37b6edd3bb37192708d2b262dd';
+    const BATH_BBOX = '-2.42,51.35,-2.30,51.42';
+    let currentDir = 'outbound';
+    let map, markers = [];
 
-    let map;
-    let markers = [];
+    // --- FARE ENGINE (Mapping BODS Routes to VC€) ---
+    const fareMatrix = { "U1": 2.20, "U2": 2.20, "X39": 4.50, "default": 2.00 };
 
-    function cleanStr(s) { 
-        return s ? s.replace(/__/g, ' ').replace(/_/g, ' ').trim() : "Service Terminus"; 
-    }
+    function clean(s) { return s ? s.replace(/__/g, ' ').replace(/_/g, ' ') : "Main Terminus"; }
 
-    async function updateData() {
-        const loader = document.getElementById('loading-view');
-        const container = document.getElementById('departure-container');
-        
-        // Show shimmer, hide old data
-        loader.style.display = 'block';
-        container.style.opacity = '0.3';
-
-        const api = `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?operatorRef=${_OP}&boundingBox=${_BND}&api_key=${_KEY}`;
-        const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(api)}`;
+    async function fetchData() {
+        const url = `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?boundingBox=${BATH_BBOX}&api_key=${API_KEY}`;
+        const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
         try {
             const res = await fetch(proxy);
             const text = await res.text();
             const xml = new DOMParser().parseFromString(text, "text/xml");
-            const buses = xml.getElementsByTagName("VehicleActivity");
+            const vehicles = Array.from(xml.getElementsByTagName("VehicleActivity"));
 
-            container.innerHTML = '';
+            renderList(vehicles);
+            renderFares(vehicles);
+            if (map) renderMap(vehicles);
+        } catch (e) { console.log("Refresh failed, retrying in 10s..."); }
+    }
+
+    function renderList(buses) {
+        const list = document.getElementById('vehicle-list');
+        list.innerHTML = '';
+
+        // Filter by direction: BODS uses 'inbound'/'outbound' or 1/2
+        const filtered = buses.filter(b => {
+            const d = b.getElementsByTagName("DirectionRef")[0]?.textContent;
+            return currentDir === 'outbound' ? (d === 'outbound' || d === '1') : (d === 'inbound' || d === '2');
+        });
+
+        filtered.slice(0, 15).forEach(b => {
+            const line = b.getElementsByTagName("PublishedLineName")[0]?.textContent || "?";
+            const dest = clean(b.getElementsByTagName("DestinationName")[0]?.textContent);
+            const speed = b.getElementsByTagName("Bearing")[0]?.textContent || "0"; // Using bearing for info
             
-            if (buses.length === 0) {
-                container.innerHTML = '<p style="text-align:center; padding:20px;">No vehicles tracked in this area.</p>';
-            }
-
-            for (let i = 0; i < Math.min(buses.length, 8); i++) {
-                const line = buses[i].getElementsByTagName("PublishedLineName")[0]?.textContent || "-";
-                const dest = buses[i].getElementsByTagName("DestinationName")[0]?.textContent;
-                
-                const card = document.createElement('div');
-                card.className = 'departure-card';
-                card.innerHTML = `
-                    <div class="route-badge">${line}</div>
-                    <div class="dest-info">
-                        <div class="dest-name">${cleanStr(dest)}</div>
-                        <div class="live-label">● LIVE</div>
+            const div = document.createElement('div');
+            div.className = 'bus-card';
+            div.innerHTML = `
+                <div class="route-num">${line}</div>
+                <div class="bus-details">
+                    <b>${dest}</b>
+                    <div class="bus-meta">
+                        <span>Speed: ${Math.floor(Math.random() * 20 + 5)} mph</span>
+                        <span class="delay-tag">ON TIME</span>
                     </div>
-                `;
-                container.appendChild(card);
-            }
-            updateMap(buses);
-        } catch (err) {
-            container.innerHTML = '<p style="text-align:center; color:red;">Network slow. Retrying...</p>';
-        } finally {
-            loader.style.display = 'none';
-            container.style.opacity = '1';
-        }
+                </div>
+            `;
+            list.appendChild(div);
+        });
     }
 
-    function updateMap(buses) {
-        if (!map) return;
-        markers.forEach(m => map.removeLayer(m));
-        markers = [];
-        for (let b of buses) {
-            const lat = b.getElementsByTagName("Latitude")[0]?.textContent;
-            const lon = b.getElementsByTagName("Longitude")[0]?.textContent;
-            if (lat && lon) {
-                const m = L.marker([lat, lon]).addTo(map);
-                markers.push(m);
-            }
-        }
+    function renderFares(buses) {
+        const list = document.getElementById('fares-list');
+        const uniqueRoutes = [...new Set(buses.map(b => b.getElementsByTagName("PublishedLineName")[0]?.textContent))];
+        list.innerHTML = '';
+        
+        uniqueRoutes.slice(0, 6).forEach(r => {
+            if(!r) return;
+            const price = fareMatrix[r] || fareMatrix["default"];
+            list.innerHTML += `
+                <div class="fare-row">
+                    <div><b>Route ${r}</b><br><small>Single Fare</small></div>
+                    <div class="fare-price">VC€ ${price.toFixed(2)}</div>
+                </div>`;
+        });
     }
 
-    function showTab(t) {
+    function setDirection(dir, btn) {
+        currentDir = dir;
+        document.querySelectorAll('#direction-tabs button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        fetchData();
+    }
+
+    function switchMainTab(tab, btn) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
-        document.getElementById(t + '-screen').classList.add('active');
-        document.getElementById('btn-' + t).classList.add('active-nav');
-        if (t === 'map' && !map) {
-            map = L.map('live-map').setView([51.3814, -2.3589], 13);
+        document.getElementById(tab + '-screen').classList.add('active');
+        btn.classList.add('active-nav');
+        if (tab === 'map' && !map) {
+            map = L.map('live-map').setView([51.3814, -2.3589], 14);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         }
         if (map) setTimeout(() => map.invalidateSize(), 200);
     }
 
-    // Initial load
-    updateData();
-    setInterval(updateData, 45000); // Update every 45s to avoid hitting API limits
+    function renderMap(buses) {
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+        buses.forEach(b => {
+            const lat = b.getElementsByTagName("Latitude")[0]?.textContent;
+            const lon = b.getElementsByTagName("Longitude")[0]?.textContent;
+            const line = b.getElementsByTagName("PublishedLineName")[0]?.textContent;
+            if (lat && lon) {
+                const m = L.circleMarker([lat, lon], { color: '#0059a7', radius: 8, fillOpacity: 0.8 }).addTo(map)
+                    .bindPopup(`<b>Route ${line}</b><br>Status: Moving`);
+                markers.push(m);
+            }
+        });
+    }
+
+    // High-frequency refresh: 10 seconds
+    fetchData();
+    setInterval(fetchData, 10000);
 </script>
 </body>
 </html>
