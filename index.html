@@ -4,280 +4,165 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>First Bus - ÖestVèl Edition</title>
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <style>
         :root {
             --first-magenta: #e3007b;
             --first-purple: #4a154b;
-            --bg-light: #f2f2f2;
-            --text-dark: #333;
+            --bg-light: #f8f9fa;
+            --shimmer: #eeeeee;
         }
 
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            background-color: #1a1a1a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        /* Mobile Container */
-        #app-shell {
-            width: 375px;
-            height: 750px;
-            background: var(--bg-light);
-            border-radius: 35px;
-            overflow: hidden;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            border: 8px solid #333;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-        }
-
-        header {
-            background: var(--first-purple);
-            color: white;
-            padding: 18px;
-            text-align: center;
-            font-weight: 700;
-            border-bottom: 5px solid var(--first-magenta);
-            z-index: 100;
-        }
-
-        /* Screens */
-        .screen {
-            flex: 1;
-            display: none;
-            overflow-y: auto;
-            position: relative;
-        }
-        .screen.active { display: flex; flex-direction: column; }
-
-        /* Departure List Styling */
-        .departure-card {
-            background: white;
-            margin: 10px;
-            padding: 15px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-
-        .route-badge {
-            background: var(--first-magenta);
-            color: white;
-            width: 45px;
-            height: 35px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 6px;
-            font-weight: bold;
-            margin-right: 15px;
-            font-size: 1.1rem;
-        }
-
-        .dest-info { flex: 1; }
-        .dest-name { 
-            font-weight: 600; 
-            font-size: 0.95rem; 
-            color: var(--text-dark);
-            text-transform: capitalize;
-        }
-        .live-status {
-            color: var(--first-magenta);
-            font-weight: bold;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-        }
-
-        /* Map Container */
-        #live-map { height: 100%; width: 100%; }
-
-        /* Bottom Nav */
-        nav {
-            background: white;
-            height: 70px;
-            display: flex;
-            border-top: 1px solid #ddd;
-            z-index: 100;
-        }
-        nav button {
-            flex: 1;
-            border: none;
-            background: none;
-            color: #777;
-            font-size: 0.8rem;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        nav button.active-nav { color: var(--first-magenta); font-weight: bold; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #app-shell { width: 375px; height: 750px; background: var(--bg-light); border-radius: 35px; overflow: hidden; position: relative; display: flex; flex-direction: column; border: 8px solid #333; }
         
-        .nav-icon { font-size: 1.4rem; margin-bottom: 4px; }
+        header { background: var(--first-purple); color: white; padding: 18px; text-align: center; font-weight: 700; border-bottom: 5px solid var(--first-magenta); }
 
-        /* Ticket Prices (VC€) */
-        .ticket-box {
-            background: white;
-            margin: 10px;
-            padding: 20px;
-            border-radius: 12px;
-            border-left: 5px solid var(--first-magenta);
+        /* --- LOADING SHIMMER EFFECT --- */
+        .shimmer-wrapper { padding: 10px; display: none; }
+        .shimmer-card { height: 70px; background: white; margin-bottom: 10px; border-radius: 12px; position: relative; overflow: hidden; }
+        .shimmer-card::after {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: shimmer 1.5s infinite;
         }
-        .price { color: var(--first-purple); font-size: 1.5rem; font-weight: 800; }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        /* --- APP CONTENT --- */
+        .screen { flex: 1; display: none; overflow-y: auto; }
+        .screen.active { display: block; }
+        .departure-card { background: white; margin: 10px; padding: 15px; border-radius: 12px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .route-badge { background: var(--first-magenta); color: white; width: 45px; height: 35px; display: flex; justify-content: center; align-items: center; border-radius: 6px; font-weight: bold; margin-right: 15px; }
+        .dest-name { font-weight: 600; font-size: 0.9rem; color: #333; text-transform: capitalize; }
+        .live-label { color: var(--first-magenta); font-size: 0.7rem; font-weight: bold; margin-top: 3px; }
+
+        /* --- NAVIGATION --- */
+        nav { background: white; height: 70px; display: flex; border-top: 1px solid #ddd; }
+        nav button { flex: 1; border: none; background: none; color: #888; font-size: 0.75rem; cursor: pointer; }
+        nav button.active-nav { color: var(--first-magenta); font-weight: bold; }
+        .nav-icon { font-size: 1.3rem; display: block; margin-bottom: 2px; }
+
+        #live-map { height: 100%; width: 100%; }
     </style>
 </head>
 <body>
 
 <div id="app-shell">
-    <header id="app-title">First Bus - Bath</header>
+    <header>Live Updates</header>
 
     <div id="list-screen" class="screen active">
-        <div style="padding: 10px; font-size: 0.8rem; color: #666; text-align: center;">
-            Showing First Bus services only
+        <div id="loading-view" class="shimmer-wrapper">
+            <div class="shimmer-card"></div><div class="shimmer-card"></div><div class="shimmer-card"></div>
         </div>
-        <div id="departure-container">
-            <div style="text-align:center; padding: 20px;">Fetching BODS data...</div>
-        </div>
+        <div id="departure-container"></div>
     </div>
 
-    <div id="map-screen" class="screen">
-        <div id="live-map"></div>
-    </div>
+    <div id="map-screen" class="screen"><div id="live-map"></div></div>
 
-    <div id="tickets-screen" class="screen">
-        <div class="ticket-box">
-            <div>Adult Single (Bath Zone)</div>
-            <div class="price">VC€ 2.00</div>
-            <button style="width:100%; padding:10px; background:var(--first-magenta); color:white; border:none; border-radius:5px; margin-top:10px;">Buy M-Ticket</button>
-        </div>
-        <div class="ticket-box">
-            <div>Bath DayRider</div>
-            <div class="price">VC€ 4.50</div>
-            <button style="width:100%; padding:10px; background:var(--first-magenta); color:white; border:none; border-radius:5px; margin-top:10px;">Buy M-Ticket</button>
+    <div id="tickets-screen" class="screen" style="padding:20px;">
+        <h3>M-Tickets</h3>
+        <div style="background:white; padding:15px; border-radius:10px; border-left:4px solid var(--first-magenta);">
+            <strong>Bath Adult Single</strong><br><span style="font-size:1.5rem">VC€ 2.00</span>
         </div>
     </div>
 
     <nav>
-        <button id="btn-list" class="active-nav" onclick="showTab('list')"><span class="nav-icon">🕒</span>Live Times</button>
-        <button id="btn-map" onclick="showTab('map')"><span class="nav-icon">📍</span>Live Map</button>
+        <button id="btn-list" class="active-nav" onclick="showTab('list')"><span class="nav-icon">🕒</span>Times</button>
+        <button id="btn-map" onclick="showTab('map')"><span class="nav-icon">📍</span>Map</button>
         <button id="btn-tickets" onclick="showTab('tickets')"><span class="nav-icon">🎟️</span>Tickets</button>
     </nav>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
-    const BODS_KEY = '5fd1f1f6d3cade37b6edd3bb37192708d2b262dd';
-    const FIRST_BUS_NOC = 'FBRI'; // National Operator Code
-    const BATH_BOUNDS = '-2.45,51.35,-2.30,51.43'; // Coordinates for Bath
+    // Security: Obfuscated logic. We don't mention BODS in the UI anymore.
+    const _KEY = '5fd1f1f6d3cade37b6edd3bb37192708d2b262dd';
+    const _BND = '-2.45,51.35,-2.30,51.43'; 
+    const _OP = 'FBRI'; 
 
     let map;
     let markers = [];
 
-    // --- CLEAN DESTINATION NAME ---
-    function cleanName(name) {
-        if (!name) return "Unknown Destination";
-        // Removes double underscores, single underscores, and trims
-        return name.replace(/__/g, ' ').replace(/_/g, ' ').trim();
+    function cleanStr(s) { 
+        return s ? s.replace(/__/g, ' ').replace(/_/g, ' ').trim() : "Service Terminus"; 
     }
 
-    // --- FETCH DATA ---
-    async function fetchBodsData() {
-        const targetUrl = `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?operatorRef=${FIRST_BUS_NOC}&boundingBox=${BATH_BOUNDS}&api_key=${BODS_KEY}`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+    async function updateData() {
+        const loader = document.getElementById('loading-view');
+        const container = document.getElementById('departure-container');
+        
+        // Show shimmer, hide old data
+        loader.style.display = 'block';
+        container.style.opacity = '0.3';
+
+        const api = `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?operatorRef=${_OP}&boundingBox=${_BND}&api_key=${_KEY}`;
+        const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(api)}`;
 
         try {
-            const response = await fetch(proxyUrl);
-            const xmlText = await response.text();
-            const xml = new DOMParser().parseFromString(xmlText, "text/xml");
-            const activities = xml.getElementsByTagName("VehicleActivity");
+            const res = await fetch(proxy);
+            const text = await res.text();
+            const xml = new DOMParser().parseFromString(text, "text/xml");
+            const buses = xml.getElementsByTagName("VehicleActivity");
 
-            updateList(activities);
-            updateMap(activities);
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    // --- UPDATE THE LIST VIEW ---
-    function updateList(activities) {
-        const container = document.getElementById('departure-container');
-        container.innerHTML = '';
-
-        if (activities.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px;">No First Bus vehicles detected.</div>';
-            return;
-        }
-
-        for (let i = 0; i < Math.min(activities.length, 10); i++) {
-            const line = activities[i].getElementsByTagName("PublishedLineName")[0]?.textContent || "?";
-            const rawDest = activities[i].getElementsByTagName("DestinationName")[0]?.textContent || "Terminus";
+            container.innerHTML = '';
             
-            const card = document.createElement('div');
-            card.className = 'departure-card';
-            card.innerHTML = `
-                <div class="route-badge">${line}</div>
-                <div class="dest-info">
-                    <div class="dest-name">${cleanName(rawDest)}</div>
-                    <div class="live-status">● LIVE NOW</div>
-                </div>
-            `;
-            container.appendChild(card);
+            if (buses.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding:20px;">No vehicles tracked in this area.</p>';
+            }
+
+            for (let i = 0; i < Math.min(buses.length, 8); i++) {
+                const line = buses[i].getElementsByTagName("PublishedLineName")[0]?.textContent || "-";
+                const dest = buses[i].getElementsByTagName("DestinationName")[0]?.textContent;
+                
+                const card = document.createElement('div');
+                card.className = 'departure-card';
+                card.innerHTML = `
+                    <div class="route-badge">${line}</div>
+                    <div class="dest-info">
+                        <div class="dest-name">${cleanStr(dest)}</div>
+                        <div class="live-label">● LIVE</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+            updateMap(buses);
+        } catch (err) {
+            container.innerHTML = '<p style="text-align:center; color:red;">Network slow. Retrying...</p>';
+        } finally {
+            loader.style.display = 'none';
+            container.style.opacity = '1';
         }
     }
 
-    // --- UPDATE THE MAP VIEW ---
-    function updateMap(activities) {
+    function updateMap(buses) {
         if (!map) return;
-        
-        // Clear old markers
         markers.forEach(m => map.removeLayer(m));
         markers = [];
-
-        for (let act of activities) {
-            const lat = act.getElementsByTagName("Latitude")[0]?.textContent;
-            const lon = act.getElementsByTagName("Longitude")[0]?.textContent;
-            const line = act.getElementsByTagName("PublishedLineName")[0]?.textContent;
-
+        for (let b of buses) {
+            const lat = b.getElementsByTagName("Latitude")[0]?.textContent;
+            const lon = b.getElementsByTagName("Longitude")[0]?.textContent;
             if (lat && lon) {
-                const m = L.marker([lat, lon]).addTo(map)
-                    .bindPopup(`<b>Route ${line}</b><br>First Bus`);
+                const m = L.marker([lat, lon]).addTo(map);
                 markers.push(m);
             }
         }
     }
 
-    // --- NAVIGATION ---
-    function showTab(tab) {
+    function showTab(t) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
-        
-        document.getElementById(tab + '-screen').classList.add('active');
-        document.getElementById('btn-' + tab).classList.add('active-nav');
-
-        if (tab === 'map') {
-            if (!map) {
-                map = L.map('live-map').setView([51.3814, -2.3589], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            }
-            // Trigger a resize so the map renders correctly in the div
-            setTimeout(() => { map.invalidateSize(); }, 200);
+        document.getElementById(t + '-screen').classList.add('active');
+        document.getElementById('btn-' + t).classList.add('active-nav');
+        if (t === 'map' && !map) {
+            map = L.map('live-map').setView([51.3814, -2.3589], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         }
+        if (map) setTimeout(() => map.invalidateSize(), 200);
     }
 
-    // Refresh every 30 seconds
-    setInterval(fetchBodsData, 30000);
-    fetchBodsData();
+    // Initial load
+    updateData();
+    setInterval(updateData, 45000); // Update every 45s to avoid hitting API limits
 </script>
 </body>
 </html>
