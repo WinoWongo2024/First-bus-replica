@@ -230,59 +230,59 @@
 </div>
 
 <script>
-    // 1. Credentials
-    const APP_ID = '9a81bccc';
-    const APP_KEY = 'caed75b9c5a81252f12a3aec68159d90';
-    const ATCO_CODE = '0100BPA10002'; // Bath Bus Station
+    // 1. BODS API Config
+    const BODS_KEY = '5fd1f1f6d3cade37b6edd3bb37192708d2b262dd';
+    
+    // Bounding box for Bath area to find active buses
+    const bounds = '-2.41,51.35,-2.32,51.41'; 
 
     async function fetchLiveDepartures() {
         const listContainer = document.getElementById('departure-list');
         
-        // TransportAPI URL
-        const targetUrl = `https://transportapi.com/v3/uk/bus/stop/${ATCO_CODE}/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&group=no&nextbuses=yes`;
+        // BODS SIRI-VM URL (Real-time vehicle positions)
+        const targetUrl = `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?boundingBox=${bounds}&api_key=${BODS_KEY}`;
         
-        // Using the 'raw' version of the proxy is simpler for our code to read
+        // We still need the proxy because DfT servers block direct browser requests (CORS)
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
         try {
             const response = await fetch(proxyUrl);
+            const xmlText = await response.text();
             
-            if (!response.ok) {
-                throw new Error('Proxy or API error');
-            }
-
-            const data = await response.json();
+            // BODS returns XML, so we need to parse it
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
             
-            // Log to console so we can see the "guts" of the data if it fails
-            console.log("Bus Data Received:", data);
+            // Look for "VehicleJourney" elements in the XML
+            const vehicles = xmlDoc.getElementsByTagName("VehicleActivity");
 
             listContainer.innerHTML = ''; 
 
-            // Check if departures exist in the response
-            if (data.departures && data.departures.all && data.departures.all.length > 0) {
-                data.departures.all.slice(0, 5).forEach(bus => {
+            if (vehicles.length > 0) {
+                // Show the first 5 buses found in the Bath area
+                for (let i = 0; i < Math.min(vehicles.length, 5); i++) {
+                    const lineName = vehicles[i].getElementsByTagName("PublishedLineName")[0]?.textContent || "Bus";
+                    const destination = vehicles[i].getElementsByTagName("DestinationName")[0]?.textContent || "Terminus";
+                    const operator = vehicles[i].getElementsByTagName("OperatorRef")[0]?.textContent || "";
+
                     const item = document.createElement('div');
                     item.className = 'departure-item';
-                    
-                    // Logic for real-time vs scheduled
-                    let timeDisplay = bus.best_departure_estimate;
-                    
                     item.innerHTML = `
-                        <span><span class="route-number">${bus.line}</span> to ${bus.direction}</span>
-                        <span style="font-weight: bold; color: var(--primary-magenta);">${timeDisplay}</span>
+                        <span><span class="route-number">${lineName}</span> to ${destination}</span>
+                        <span style="font-weight: bold; color: var(--primary-magenta);">LIVE</span>
                     `;
                     listContainer.appendChild(item);
-                });
+                }
             } else {
-                listContainer.innerHTML = '<div style="padding:10px;">No live buses found. It might be outside of operating hours.</div>';
+                listContainer.innerHTML = '<div style="padding:10px;">Searching for live vehicles in Bath...</div>';
             }
         } catch (error) {
-            console.error("Full Error Info:", error);
-            listContainer.innerHTML = `<div style="color:red; padding:10px;">Connection Error.<br><small>Check if your API keys are correct.</small></div>`;
+            console.error("BODS Error:", error);
+            listContainer.innerHTML = `<div style="color:red; padding:10px;">BODS Connection Error.</div>`;
         }
     }
 
-    // --- Standard App Logic ---
+    // --- Tab & Animation Logic ---
     function switchTab(tab) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
@@ -302,6 +302,7 @@
     moveBus();
     fetchLiveDepartures();
 </script>
+
 
 
 </body>
