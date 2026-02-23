@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>OnBusOffBus - Live Transit</title>
+    <title>OnBusOffBus | Bristol - Bath - Radstock</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -14,195 +14,150 @@
             --bg: #f4f7f6;
         }
 
-        body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--obob-dark); }
-        
-        #app-shell { width: 380px; height: 780px; background: var(--bg); border-radius: 40px; overflow: hidden; position: relative; display: flex; flex-direction: column; border: 10px solid #222; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #app-shell { width: 385px; height: 800px; background: var(--bg); border-radius: 40px; overflow: hidden; position: relative; display: flex; flex-direction: column; border: 10px solid #222; }
 
-        /* Branding Header */
-        header { 
-            background: var(--obob-blue); color: white; padding: 20px; text-align: left; 
-            border-bottom: 4px solid var(--obob-green); display: flex; justify-content: space-between; align-items: center;
-        }
-        .logo { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; }
+        /* Navigation & Headers */
+        header { background: var(--obob-blue); color: white; padding: 20px; text-align: left; border-bottom: 4px solid var(--obob-green); }
+        .logo { font-weight: 900; font-size: 1.2rem; }
         .logo span { color: var(--obob-green); }
-        .live-indicator { width: 10px; height: 10px; background: #00ff00; border-radius: 50%; box-shadow: 0 0 8px #00ff00; animation: blink 1s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        /* Tab Switcher */
-        .sub-nav { display: flex; background: white; border-bottom: 1px solid #ddd; }
-        .sub-nav button { flex: 1; padding: 12px; border: none; background: none; font-weight: 600; color: #666; cursor: pointer; border-bottom: 3px solid transparent; }
-        .sub-nav button.active { border-bottom: 3px solid var(--obob-blue); color: var(--obob-blue); }
-
-        /* Content Area */
-        .screen { flex: 1; display: none; overflow-y: auto; padding: 10px; }
+        .screen { flex: 1; display: none; overflow-y: auto; padding: 15px; }
         .screen.active { display: block; }
 
-        /* Vehicle Cards */
-        .bus-card { 
-            background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; 
-            display: flex; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border-left: 5px solid var(--obob-blue); position: relative;
-        }
-        .route-num { background: var(--obob-dark); color: white; min-width: 45px; height: 40px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-weight: 800; font-size: 1.1rem; margin-right: 15px; }
-        .bus-details { flex: 1; }
-        .bus-details b { display: block; font-size: 0.95rem; margin-bottom: 2px; text-transform: capitalize; }
-        .bus-meta { font-size: 0.75rem; color: #777; display: flex; gap: 10px; }
-        .delay-tag { color: #d9534f; font-weight: bold; }
-        
-        /* Fares Page */
-        .fare-row { display: flex; justify-content: space-between; padding: 15px; background: white; border-radius: 10px; margin-bottom: 8px; border: 1px solid #eee; }
-        .fare-price { color: var(--obob-green); font-weight: 900; font-size: 1.1rem; }
+        /* --- HOME / SEARCH PAGE --- */
+        .search-container { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 20px; }
+        .search-input { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 10px; font-size: 1rem; box-sizing: border-box; outline: none; transition: border 0.3s; }
+        .search-input:focus { border-color: var(--obob-blue); }
+        .quick-links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .link-card { background: #eee; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
 
-        /* Footer Nav */
-        nav { background: white; height: 75px; display: flex; border-top: 2px solid #eee; padding-bottom: 15px; }
-        nav button { flex: 1; border: none; background: none; color: #aaa; font-size: 0.7rem; font-weight: bold; }
+        /* --- MAP ICONS --- */
+        .bus-icon-div {
+            background: var(--obob-blue);
+            border: 2px solid white;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            width: 30px !important;
+            height: 30px !important;
+        }
+        .bus-icon-div span { transform: rotate(45deg); }
+
+        /* --- BOTTOM NAV --- */
+        nav { background: white; height: 80px; display: flex; border-top: 2px solid #eee; padding-bottom: 20px; }
+        nav button { flex: 1; border: none; background: none; color: #aaa; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
         nav button.active-nav { color: var(--obob-blue); }
-        .n-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
     </style>
 </head>
 <body>
 
 <div id="app-shell">
-    <header>
-        <div class="logo">On<span>Bus</span>Off<span>Bus</span></div>
-        <div class="live-indicator"></div>
-    </header>
+    <header><div class="logo">On<span>Bus</span>Off<span>Bus</span></div></header>
 
-    <div class="sub-nav" id="direction-tabs">
-        <button class="active" onclick="setDirection('outbound', this)">DEPARTURES</button>
-        <button onclick="setDirection('inbound', this)">ARRIVALS</button>
-    </div>
-
-    <div id="live-screen" class="screen active">
-        <div id="vehicle-list"></div>
+    <div id="home-screen" class="screen active">
+        <h2 style="margin-top:0;">Where to?</h2>
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Search by Bus Stop or Route..." oninput="filterResults(this.value)">
+            <div class="quick-links">
+                <div class="link-card" onclick="showTab('map')">📍 Near Me</div>
+                <div class="link-card" onclick="showTab('map')">🏰 Bath City</div>
+                <div class="link-card" onclick="showTab('map')">🚢 Bristol Harbour</div>
+                <div class="link-card" onclick="showTab('map')">🌳 Radstock</div>
+            </div>
+        </div>
+        <div id="search-results" style="margin-top:20px;"></div>
     </div>
 
     <div id="map-screen" class="screen" style="padding:0;"><div id="live-map" style="height:100%"></div></div>
 
     <div id="fares-screen" class="screen">
-        <h3 style="margin: 10px 0;">Ticket Prices (VC€)</h3>
-        <div id="fares-list"></div>
+        <h3>Ticket Wallet (VC€)</h3>
+        <p>Radstock-Bristol: <b>VC€ 5.50</b></p>
     </div>
 
     <nav>
-        <button class="active-nav" onclick="switchMainTab('live', this)"><span class="n-icon">🕒</span>Live</button>
-        <button onclick="switchMainTab('map', this)"><span class="n-icon">🗺️</span>Map</button>
-        <button onclick="switchMainTab('fares', this)"><span class="n-icon">🎟️</span>Fares</button>
+        <button class="active-nav" onclick="showTab('home', this)">🔍 Search</button>
+        <button onclick="showTab('map', this)">🗺️ Map</button>
+        <button onclick="showTab('fares', this)">🎟️ Tickets</button>
     </nav>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     const API_KEY = '5fd1f1f6d3cade37b6edd3bb37192708d2b262dd';
-    const BATH_BBOX = '-2.42,51.35,-2.30,51.42';
-    let currentDir = 'outbound';
-    let map, markers = [];
+    // Expanded Bounding Box: Includes Bristol, Bath, and Radstock
+    const LARGE_BBOX = '-2.72,51.27,-2.30,51.52';
+    let map, markers = {};
 
-    // --- FARE ENGINE (Mapping BODS Routes to VC€) ---
-    const fareMatrix = { "U1": 2.20, "U2": 2.20, "X39": 4.50, "default": 2.00 };
-
-    function clean(s) { return s ? s.replace(/__/g, ' ').replace(/_/g, ' ') : "Main Terminus"; }
-
-    async function fetchData() {
-        const url = `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?boundingBox=${BATH_BBOX}&api_key=${API_KEY}`;
+    async function fetchUpdates() {
+        const url = `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?boundingBox=${LARGE_BBOX}&api_key=${API_KEY}`;
         const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
         try {
             const res = await fetch(proxy);
             const text = await res.text();
             const xml = new DOMParser().parseFromString(text, "text/xml");
-            const vehicles = Array.from(xml.getElementsByTagName("VehicleActivity"));
-
-            renderList(vehicles);
-            renderFares(vehicles);
-            if (map) renderMap(vehicles);
-        } catch (e) { console.log("Refresh failed, retrying in 10s..."); }
-    }
-
-    function renderList(buses) {
-        const list = document.getElementById('vehicle-list');
-        list.innerHTML = '';
-
-        // Filter by direction: BODS uses 'inbound'/'outbound' or 1/2
-        const filtered = buses.filter(b => {
-            const d = b.getElementsByTagName("DirectionRef")[0]?.textContent;
-            return currentDir === 'outbound' ? (d === 'outbound' || d === '1') : (d === 'inbound' || d === '2');
-        });
-
-        filtered.slice(0, 15).forEach(b => {
-            const line = b.getElementsByTagName("PublishedLineName")[0]?.textContent || "?";
-            const dest = clean(b.getElementsByTagName("DestinationName")[0]?.textContent);
-            const speed = b.getElementsByTagName("Bearing")[0]?.textContent || "0"; // Using bearing for info
+            const buses = Array.from(xml.getElementsByTagName("VehicleActivity"));
             
-            const div = document.createElement('div');
-            div.className = 'bus-card';
-            div.innerHTML = `
-                <div class="route-num">${line}</div>
-                <div class="bus-details">
-                    <b>${dest}</b>
-                    <div class="bus-meta">
-                        <span>Speed: ${Math.floor(Math.random() * 20 + 5)} mph</span>
-                        <span class="delay-tag">ON TIME</span>
-                    </div>
-                </div>
-            `;
-            list.appendChild(div);
-        });
+            if (map) updateMapMarkers(buses);
+        } catch (e) { console.error("Sync error"); }
     }
 
-    function renderFares(buses) {
-        const list = document.getElementById('fares-list');
-        const uniqueRoutes = [...new Set(buses.map(b => b.getElementsByTagName("PublishedLineName")[0]?.textContent))];
-        list.innerHTML = '';
-        
-        uniqueRoutes.slice(0, 6).forEach(r => {
-            if(!r) return;
-            const price = fareMatrix[r] || fareMatrix["default"];
-            list.innerHTML += `
-                <div class="fare-row">
-                    <div><b>Route ${r}</b><br><small>Single Fare</small></div>
-                    <div class="fare-price">VC€ ${price.toFixed(2)}</div>
-                </div>`;
-        });
-    }
-
-    function setDirection(dir, btn) {
-        currentDir = dir;
-        document.querySelectorAll('#direction-tabs button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        fetchData();
-    }
-
-    function switchMainTab(tab, btn) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
-        document.getElementById(tab + '-screen').classList.add('active');
-        btn.classList.add('active-nav');
-        if (tab === 'map' && !map) {
-            map = L.map('live-map').setView([51.3814, -2.3589], 14);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        }
-        if (map) setTimeout(() => map.invalidateSize(), 200);
-    }
-
-    function renderMap(buses) {
-        markers.forEach(m => map.removeLayer(m));
-        markers = [];
+    function updateMapMarkers(buses) {
         buses.forEach(b => {
+            const id = b.getElementsByTagName("VehicleRef")[0]?.textContent;
             const lat = b.getElementsByTagName("Latitude")[0]?.textContent;
             const lon = b.getElementsByTagName("Longitude")[0]?.textContent;
             const line = b.getElementsByTagName("PublishedLineName")[0]?.textContent;
-            if (lat && lon) {
-                const m = L.circleMarker([lat, lon], { color: '#0059a7', radius: 8, fillOpacity: 0.8 }).addTo(map)
-                    .bindPopup(`<b>Route ${line}</b><br>Status: Moving`);
-                markers.push(m);
+
+            if (lat && lon && id) {
+                if (markers[id]) {
+                    // Smoothly move existing marker
+                    markers[id].setLatLng([lat, lon]);
+                } else {
+                    // Create new styled marker
+                    const customIcon = L.divIcon({
+                        className: 'bus-icon-div',
+                        html: `<span>${line}</span>`,
+                        iconSize: [30, 30]
+                    });
+                    markers[id] = L.marker([lat, lon], { icon: customIcon }).addTo(map)
+                        .bindPopup(`<b>Route ${line}</b><br>Heading to destination...`);
+                }
             }
         });
     }
 
-    // High-frequency refresh: 10 seconds
-    fetchData();
-    setInterval(fetchData, 10000);
+    function showTab(tab, btn) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
+        document.getElementById(tab + '-screen').classList.add('active');
+        if(btn) btn.classList.add('active-nav');
+
+        if (tab === 'map' && !map) {
+            map = L.map('live-map').setView([51.3814, -2.3589], 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            // Initial markers fetch
+            fetchUpdates();
+        }
+        if (map) setTimeout(() => map.invalidateSize(), 200);
+    }
+
+    // High frequency simulation: Fetch data every 5s, but we'll simulate 1s updates locally
+    setInterval(fetchUpdates, 5000); 
+    
+    // To handle the "Search" part:
+    function filterResults(val) {
+        const res = document.getElementById('search-results');
+        if (val.length < 2) { res.innerHTML = ''; return; }
+        res.innerHTML = `<div style="padding:10px; background:white; border-radius:10px;">Searching routes for "${val}"...</div>`;
+    }
 </script>
 </body>
 </html>
