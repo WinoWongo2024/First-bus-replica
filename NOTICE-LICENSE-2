@@ -1,0 +1,28 @@
+OnBusOffBus
+Copyright © 2026 Josh Winson. All rights reserved.
+
+1. OWNERSHIP
+This software "OnBusOffBus" and its associated documentation are the 
+intellectual property of Josh Winson, residing in Bath and Radstock, UK.
+
+2. GOVERNMENT DATA & BODS COMPLIANCE
+This application utilizes public sector information from the Department for 
+Transport (DfT) via the Bus Open Data Service (BODS), licensed under the 
+Open Government Licence v3.0.
+- This software is not an official product of the UK Government or the DfT.
+- The Licensor makes no warranties regarding the accuracy or timeliness of 
+  the transit data provided by the BODS API.
+- Users must comply with the Open Government Licence v3.0 (OGL) terms when 
+  using or redistributing any data-heavy portions of this work.
+
+3. TRADEMARK & BRAND PROTECTION
+The name "OnBusOffBus" and all associated branding/UI design elements are 
+trademarks of Josh Winson. Use of this software under the Apache License 2.0 
+does NOT grant permission to use these trademarks for commercial purposes or 
+to imply an endorsement of any third-party product or service.
+
+4. LIMITATION OF LIABILITY (UK SPECIFIC)
+To the maximum extent permitted by the laws of England and Wales, the 
+Licensor shall not be liable for any direct, indirect, or consequential loss 
+arising from travel disruptions, scheduling errors, or reliance on the 
+data processed by this application.
