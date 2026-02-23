@@ -230,28 +230,31 @@
 </div>
 
 <script>
-    // --- API CONFIG ---
+    // 1. Your Credentials
     const APP_ID = '9a81bccc';
     const APP_KEY = 'caed75b9c5a81252f12a3aec68159d90';
     const ATCO_CODE = '0100BPA10002'; // Bath Bus Station
 
-    // --- LIVE DATA FETCHING ---
     async function fetchLiveDepartures() {
         const listContainer = document.getElementById('departure-list');
-        const url = `https://transportapi.com/v3/uk/bus/stop/${ATCO_CODE}/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&group=no&nextbuses=yes`;
+        
+        // The real API URL
+        const targetUrl = `https://transportapi.com/v3/uk/bus/stop/${ATCO_CODE}/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&group=no&nextbuses=yes`;
+        
+        // The simplest Free Proxy (AllOrigins) to bypass EdgeOne/CORS blocks
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
         try {
-            const response = await fetch(url);
-            const data = await response.json();
+            const response = await fetch(proxyUrl);
+            const wrapper = await response.json();
+            // AllOrigins wraps the data in a "contents" string, so we parse it:
+            const data = JSON.parse(wrapper.contents);
             
-            listContainer.innerHTML = ''; // Clear loading text
-
-            // The API returns an array under 'departures' -> 'all'
+            listContainer.innerHTML = ''; 
             const buses = data.departures.all;
 
             if (buses && buses.length > 0) {
-                // Show the top 4 upcoming buses
-                buses.slice(0, 4).forEach(bus => {
+                buses.slice(0, 5).forEach(bus => {
                     const item = document.createElement('div');
                     item.className = 'departure-item';
                     item.innerHTML = `
@@ -261,34 +264,32 @@
                     listContainer.appendChild(item);
                 });
             } else {
-                listContainer.innerHTML = 'No live buses found at this time.';
+                listContainer.innerHTML = 'No buses found. Is it late in Bath?';
             }
         } catch (error) {
-            console.error("API Error:", error);
-            listContainer.innerHTML = 'Error connecting to TransportAPI.';
+            console.error("Fetch error:", error);
+            listContainer.innerHTML = '<div style="color:red">Unable to load live times.</div>';
         }
     }
 
-    // --- TAB SWITCHING ---
+    // --- Simple Navigation ---
     function switchTab(tab) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
-        
         document.getElementById(tab + '-screen').classList.add('active');
         document.getElementById('nav-' + tab).classList.add('active-nav');
     }
 
-    // --- BUS ANIMATION (CSS Simulation) ---
-    const bus = document.getElementById('sim-bus');
+    // --- Simple Animation ---
     let pos = -60;
     function moveBus() {
-        pos += 1.5;
-        if (pos > 380) pos = -60;
-        bus.style.left = pos + 'px';
+        pos += 1;
+        if (pos > 375) pos = -60;
+        document.getElementById('sim-bus').style.left = pos + 'px';
         requestAnimationFrame(moveBus);
     }
 
-    // Initialize
+    // Start everything
     moveBus();
     fetchLiveDepartures();
 </script>
